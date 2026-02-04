@@ -1,140 +1,93 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
 import os
+import requests
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
 app = Flask(__name__)
-CORS(app)  # allow all origins for simplicity
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.1-8b-instant"
 
 
-# -------------------------
-# 1. GENERATE PLAN (bigGoal + sampleMountain + sampleDailyStep)
-# -------------------------
-@app.route("/generate-plan", methods=["POST"])
-def generate_plan():
+def call_groq(system_prompt, user_prompt):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {GROQ_API_KEY}"
+    }
+
+    body = {
+        "model": "llama-3.1-8b-instant",
+        "temperature": 0.7,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    }
+
+    resp = requests.post(GROQ_URL, json=body, headers=headers)
+    data = resp.json()
+
+    try:
+        return json.loads(data["choices"][0]["message"]["content"])
+    except:
+        return None
+
+
+@app.post("/onboarding-plan")
+def onboarding_plan():
     data = request.json
-    vague_goal = data.get("vagueGoal")
-    clarifications = data.get("clarifications", [])
+    vague = data.get("vagueGoal", "")
+    clar = data.get("clarifications", [])
 
     system_prompt = (
         "You are the Swiss Chocolate Coach. Convert vague goals into a clear big goal, "
-        "then create ONE sample weekly mountain and ONE sample daily step.\n\n"
-        "Respond ONLY in JSON with keys:\n"
-        "bigGoal: string,\n"
-        "weeklyMountain: { name, weeklyTarget, note },\n"
-        "dailyStep: string\n"
-        "IMPORTANT: weeklyMountain must NOT include a tasks list. Keep it simple."
+        "then create ONE sample weekly mountain and ONE sample daily step. "
+        "Respond ONLY in JSON with keys: "
+        "bigGoal, weeklyMountain{name, weeklyTarget, note}, dailyStep."
     )
 
-    user_prompt = f"Vague Goal: {vague_goal}\n\nUser Clarifications:\n- " + "\n- ".join(clarifications)
+    user_prompt = f"Vague Goal: {vague}\nClarifications:\n- " + "\n- ".join(clar)
 
-    payload = {
-        "model": MODEL,
-        "temperature": 0.7,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {GROQ_API_KEY}"
-    }
-
-    groq_res = requests.post(GROQ_URL, headers=headers, json=payload)
-    try:
-        content = groq_res.json()["choices"][0]["message"]["content"]
-        return jsonify({"success": True, "data": content})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+    result = call_groq(system_prompt, user_prompt)
+    return jsonify(result or {})
 
 
-# -------------------------
-# 2. WEEKLY MOUNTAIN GENERATOR (real production)
-# -------------------------
-@app.route("/generate-weekly-mountain", methods=["POST"])
-def generate_weekly_mountain():
+@app.post("/weekly-mountain")
+def weekly_mountain():
     data = request.json
-    big_goal = data.get("bigGoal")
+    big = data.get("bigGoal", "")
 
     system_prompt = (
-        "Generate the FIRST weekly mountain for the user's big goal.\n"
-        "Respond ONLY in JSON with keys: name, weeklyTarget, tasks (5-7 strings), note."
+        "Generate this week's mountain ONLY as JSON with keys: "
+        "name, weeklyTarget, note."
     )
 
-    user_prompt = f"Big goal: {big_goal}"
+    user_prompt = f"Big goal: {big}"
 
-    payload = {
-        "model": MODEL,
-        "temperature": 0.7,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {GROQ_API_KEY}"
-    }
-
-    groq_res = requests.post(GROQ_URL, headers=headers, json=payload)
-    try:
-        content = groq_res.json()["choices"][0]["message"]["content"]
-        return jsonify({"success": True, "data": content})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+    result = call_groq(system_prompt, user_prompt)
+    return jsonify(result or {})
 
 
-# -------------------------
-# 3. DAILY SWEETSTEPS
-# -------------------------
-@app.route("/generate-daily-steps", methods=["POST"])
-def generate_daily_steps():
+@app.post("/daily-steps")
+def daily_steps():
     data = request.json
-    big_goal = data.get("bigGoal")
+    big = data.get("bigGoal", "")
 
+    # CHANGED ONLY THIS PROMPT
     system_prompt = (
-        "Generate today's micro-steps for the user's big goal. "
-        "Respond ONLY in JSON with keys: steps (3-6 items), coachNote (string). "
-        "Tone warm, friendly, calm."
+        "Generate today's micro-steps as a LIST. Respond ONLY in JSON with key: "
+        "steps: [ { task: string, time: number_in_minutes } ]. "
+        "Generate 3 to 6 tasks. Time should be an integer like 10, 15, 20."
     )
 
-    user_prompt = f"Generate actionable daily micro-steps for this goal: {big_goal}"
+    user_prompt = f"Big goal: {big}"
 
-    payload = {
-        "model": MODEL,
-        "temperature": 0.7,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {GROQ_API_KEY}"
-    }
-
-    groq_res = requests.post(GROQ_URL, headers=headers, json=payload)
-    try:
-        content = groq_res.json()["choices"][0]["message"]["content"]
-        return jsonify({"success": True, "data": content})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+    result = call_groq(system_prompt, user_prompt)
+    return jsonify(result or {})
 
 
-# -------------------------
-# RUN LOCAL
-# -------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run()
