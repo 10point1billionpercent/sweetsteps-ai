@@ -97,7 +97,7 @@ def weekly_mountain():
 # ---------------------------------------------------------
 # 3. DAILY SWEETSTEPS (must use bigGoal + weeklyMountain)
 # ---------------------------------------------------------
-@app.post("/generate-daily-steps")
+@app.post("/daily-steps")
 def generate_daily_steps():
     data = request.json
     big_goal = data.get("big_goal")
