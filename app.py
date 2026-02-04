@@ -99,7 +99,7 @@ def generate_weekly_mountain():
 # ----------------------------------------------------------
 # DAILY STEPS ENDPOINT (FIXED AGAIN — NOW 100% SAFE)
 # ----------------------------------------------------------
-@app.post("/generate-daily-steps")
+@app.post("/daily-steps")
 def generate_daily_steps():
     data = get_json()
     big_goal = data.get("big_goal")
