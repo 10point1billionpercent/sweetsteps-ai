@@ -1,16 +1,23 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from groq import Groq
 import json
 import os
-from flask_cors import CORS
 
 app = Flask(__name__)
 
+# Minimal, safe, Caffeine-compatible CORS
 CORS(
     app,
     resources={r"/*": {"origins": "*"}},
     methods=["GET", "POST", "OPTIONS"]
 )
+
+@app.route("/<path:path>", methods=["OPTIONS"])
+def options_handler(path):
+    return ("", 204)
+
+# (ALL YOUR EXISTING ENDPOINTS BELOW… unchanged)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
