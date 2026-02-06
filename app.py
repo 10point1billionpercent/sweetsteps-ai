@@ -109,7 +109,7 @@ def generate_weekly_mountain():
                     "- It should be something the user can complete in 3–5 tiny sessions.\n"
                     "- Tone must be warm, soft, encouraging.\n"
                     "\n"
-                    "FORMAT (STRICT):\n"
+                    "FORMAT (STRICT JSON):\n"
                     "{\n"
                     "  name: string,\n"
                     "  note: string,\n"
@@ -157,7 +157,7 @@ def generate_daily_steps():
                     {
                         "role": "system",
                         "content": (
-                            "You generate today's Daily SweetSteps.\n"
+                            "You generate today's Daily SweetSteps in JSON format.\n"
                             "Your job: help the user make REAL progress without feeling overwhelmed.\n"
                             "\n"
                             "Every task MUST be tiny, gentle, and easy to start.\n"
