@@ -25,7 +25,7 @@ def options_handler(path):
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ----------------------------------------------------------
-# JSON BODY EXTRACTOR (RENDER-FIX)
+# JSON BODY EXTRACTOR
 # ----------------------------------------------------------
 def get_json():
     try:
@@ -39,8 +39,7 @@ def get_json():
         return {}
 
 # ----------------------------------------------------------
-# 1) ONBOARDING PLAN
-# /onboarding-plan
+# 1) ONBOARDING
 # ----------------------------------------------------------
 @app.post("/onboarding-plan")
 def generate_onboarding():
@@ -53,7 +52,7 @@ def generate_onboarding():
         return jsonify({"error": "vagueGoal, currentProgress, and timeLimit required"}), 400
 
     completion = client.chat.completions.create(
-        model="gpt-oss-120b",
+        model="llama-3.1-8b-instant",
         temperature=0.7,
         response_format={"type": "json_object"},
         messages=[
@@ -65,8 +64,7 @@ def generate_onboarding():
                     "{ bigGoal: string,\n"
                     "  dailyStep: string,\n"
                     "  weeklyMountain: { name: string, note: string, weeklyTarget: string }\n"
-                    "}\n"
-                    "weeklyTarget MUST be a descriptive string."
+                    "}"
                 )
             },
             {
@@ -80,12 +78,10 @@ def generate_onboarding():
         ]
     )
 
-    result = json.loads(completion.choices[0].message.content)
-    return jsonify(result)
+    return jsonify(json.loads(completion.choices[0].message.content))
 
 # ----------------------------------------------------------
 # 2) WEEKLY MOUNTAIN
-# /weekly-mountain
 # ----------------------------------------------------------
 @app.post("/weekly-mountain")
 def generate_weekly_mountain():
@@ -96,7 +92,7 @@ def generate_weekly_mountain():
         return jsonify({"error": "bigGoal required"}), 400
 
     completion = client.chat.completions.create(
-        model="gpt-oss-120b",
+        model="llama-3.1-8b-instant",
         temperature=0.7,
         response_format={"type": "json_object"},
         messages=[
@@ -105,8 +101,7 @@ def generate_weekly_mountain():
                 "content": (
                     "Generate a weekly mountain. "
                     "Return STRICT JSON:\n"
-                    "{ name: string, note: string, weeklyTarget: string }\n"
-                    "weeklyTarget MUST be a descriptive string."
+                    "{ name: string, note: string, weeklyTarget: string }"
                 )
             },
             {
@@ -116,12 +111,10 @@ def generate_weekly_mountain():
         ]
     )
 
-    result = json.loads(completion.choices[0].message.content)
-    return jsonify(result)
+    return jsonify(json.loads(completion.choices[0].message.content))
 
 # ----------------------------------------------------------
 # 3) DAILY SWEETSTEPS
-# /daily-steps
 # ----------------------------------------------------------
 @app.post("/daily-steps")
 def generate_daily_steps():
@@ -130,13 +123,12 @@ def generate_daily_steps():
     weekly_mountain = data.get("weeklyMountain")
 
     if not big_goal or not weekly_mountain:
-        print("DATA RECEIVED:", data)
         return jsonify({"error": "bigGoal and weeklyMountain required"}), 400
 
     def ask():
         try:
             c = client.chat.completions.create(
-                model="gpt-oss-120b",
+                model="llama-3.1-8b-instant",
                 temperature=0.7,
                 response_format={"type": "json_object"},
                 messages=[
@@ -146,8 +138,7 @@ def generate_daily_steps():
                             "Generate today's Daily SweetSteps.\n"
                             "Return STRICT JSON:\n"
                             "{ tasks: [ { day: string, task: string, time: string } ],\n"
-                            "  coachNote: string }\n"
-                            "All fields MUST be strings."
+                            "  coachNote: string }"
                         )
                     },
                     {
@@ -166,7 +157,6 @@ def generate_daily_steps():
 
     out = ask()
     if out is None:
-        print("Retrying Groq once…")
         out = ask()
 
     if out is None:
@@ -184,7 +174,7 @@ def generate_daily_steps():
     return jsonify(out)
 
 # ----------------------------------------------------------
-# HEALTH CHECK
+# HEALTH
 # ----------------------------------------------------------
 @app.get("/")
 def health():
