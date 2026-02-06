@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from groq import Groq
@@ -54,7 +53,7 @@ def generate_onboarding():
         return jsonify({"error": "vagueGoal, currentProgress, and timeLimit required"}), 400
 
     completion = client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
+        model="gpt-oss-120b",
         temperature=0.7,
         response_format={"type": "json_object"},
         messages=[
@@ -67,7 +66,7 @@ def generate_onboarding():
                     "  dailyStep: string,\n"
                     "  weeklyMountain: { name: string, note: string, weeklyTarget: string }\n"
                     "}\n"
-                    "Make weeklyTarget a descriptive string."
+                    "weeklyTarget MUST be a descriptive string."
                 )
             },
             {
@@ -97,7 +96,7 @@ def generate_weekly_mountain():
         return jsonify({"error": "bigGoal required"}), 400
 
     completion = client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
+        model="gpt-oss-120b",
         temperature=0.7,
         response_format={"type": "json_object"},
         messages=[
@@ -137,7 +136,7 @@ def generate_daily_steps():
     def ask():
         try:
             c = client.chat.completions.create(
-                model="llama-3.1-70b-versatile",
+                model="gpt-oss-120b",
                 temperature=0.7,
                 response_format={"type": "json_object"},
                 messages=[
