@@ -139,16 +139,20 @@ def generate_daily_steps():
                         "role": "system",
                         "content": (
                             "Generate today's Daily SweetSteps.\n"
-                            "Return STRICT JSON with EXACT shape:\n"
-                            "{\n"
-                            "  tasks: [\n"
-                            "    { title: string, description: string, estimatedMinutes: number }\n"
-                            "  ],\n"
-                            "  coachNote: string\n"
-                            "}\n"
-                            "All fields required.\n"
-                            "NO extra fields. NO nested objects.\n"
-                            "estimatedMinutes MUST be a number (not a string)."
+"Return STRICT JSON with EXACT shape:\n"
+"{\n"
+"  tasks: [\n"
+"    { title: string, description: string, estimatedMinutes: number }\n"
+"  ],\n"
+"  coachNote: string\n"
+"}\n"
+"Rules:\n"
+"- estimatedMinutes MUST be a number between 5 and 30.\n"
+"- NEVER exceed 30 minutes.\n"
+"- NEVER return hours.\n"
+"- Prefer 10, 15, 20, 25, or 30-minute tasks.\n"
+"- Tasks should be practical tiny steps, not giant goals.\n"
+"- NO extra fields. NO nested objects."
                         )
                     },
                     {
